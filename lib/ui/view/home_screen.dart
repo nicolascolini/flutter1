@@ -250,9 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       type: TransactionType.income,
       submitCommand: viewModelController.saveTransaction,
-      onSubmit: (newTransaction) {
-        viewModelController.saveTransaction.execute(newTransaction);
-      },
+      // onSubmit: (newTransaction) {
+      //   viewModelController.saveTransaction.execute(newTransaction);
+      // },
       // onSubmit: (title, amount, date) {
       //   transactionProvider.addIncome(title, amount, date);
       // },
@@ -267,9 +267,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       type: TransactionType.expense,
        submitCommand: viewModelController.saveTransaction,
-      onSubmit: (newTransaction) {
-        viewModelController.saveTransaction.execute(newTransaction);
-      },
+      // onSubmit: (newTransaction) {
+      //   viewModelController.saveTransaction.execute(newTransaction);
+      // },
       // onSubmit: (title, amount, date) {
       //   transactionProvider.addExpense(title, amount, date);
       // },

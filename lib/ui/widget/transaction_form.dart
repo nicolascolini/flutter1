@@ -12,7 +12,7 @@ class TransactionForm extends StatefulWidget {
   final Command1<void, Failure, TransactionEntity> submitCommand;
 
   /// Função de callback quando o formulário é enviado
-  final Function(TransactionEntity newTransaction) onSubmit;
+  //final Function(TransactionEntity newTransaction) onSubmit;
 
   /// Tipo de transação (receita ou despesa)
   final TransactionType type;
@@ -22,7 +22,7 @@ class TransactionForm extends StatefulWidget {
 
   const TransactionForm({
     super.key,
-    required this.onSubmit,
+    //required this.onSubmit,
     required this.type,
     required this.color,
     required this.submitCommand,
@@ -77,6 +77,20 @@ class _TransactionFormState extends State<TransactionForm> {
       //widget.onSubmit(newTransaction);
       await widget.submitCommand.execute(newTransaction);
 
+      if (widget.submitCommand.resultSignal.value?.isFailure ?? false) {
+        // Se o comando falhar, exibe uma mensagem de erro
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao adicionar ${widget.type.nameSingular}: ${widget.submitCommand.resultSignal.value?.failureValueOrNull ?? 'Erro desconhecido'}',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
       // Limpa os campos do formulário
       _titleController.clear();
       _amountController.clear();
@@ -92,6 +106,7 @@ class _TransactionFormState extends State<TransactionForm> {
           duration: const Duration(seconds: 2),
         ),
       );
+      Navigator.pop(context);
     }
   }
 
@@ -177,7 +192,6 @@ class _TransactionFormState extends State<TransactionForm> {
             // Botão de envio do formulário
             Watch((context) {
               final isRunning = widget.submitCommand.runningSignal.value;
-              print('entrou no Watch do TransactionForm value: $isRunning');
 
               return SizedBox(
                 height: 50,

@@ -15,12 +15,12 @@ class TransactionSheet extends StatelessWidget {
   final Command1<void, Failure, TransactionEntity> submitCommand;
 
   /// Função callback quando a transação é submetida
-  final Function(TransactionEntity newTransaction) onSubmit;
+  // final Function(TransactionEntity newTransaction) onSubmit;
 
   const TransactionSheet({
     super.key,
     required this.type,
-    required this.onSubmit,
+    // required this.onSubmit,
     required this.submitCommand,
   });
 
@@ -28,7 +28,7 @@ class TransactionSheet extends StatelessWidget {
   static Future<void> show({
     required BuildContext context,
     required TransactionType type,
-    required Function(TransactionEntity newTransaction) onSubmit,
+    // required Function(TransactionEntity newTransaction) onSubmit,
     required Command1<void, Failure, TransactionEntity> submitCommand,
   }) async {
     return showModalBottomSheet(
@@ -38,7 +38,7 @@ class TransactionSheet extends StatelessWidget {
       builder:
           (context) => TransactionSheet(
             type: type,
-            onSubmit: onSubmit,
+            // onSubmit: onSubmit,
             submitCommand: submitCommand,
           ),
     );
@@ -126,10 +126,10 @@ class TransactionSheet extends StatelessWidget {
                   type: type,
                   color: color,
                   submitCommand: submitCommand,
-                  onSubmit: (newTransaction) {
-                    onSubmit(newTransaction);
-                    Navigator.pop(context); // Fecha o bottom sheet
-                  },
+                  // onSubmit: (newTransaction) {
+                  //   onSubmit(newTransaction);
+                  //   Navigator.pop(context); // Fecha o bottom sheet
+                  // },
                 ),
               ),
             ),
