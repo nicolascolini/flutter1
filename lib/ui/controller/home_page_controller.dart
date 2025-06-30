@@ -161,6 +161,7 @@ class HomePageController {
         transaction: last,
       ));
 
+
       if (result.isSuccess) {
         final list = [..._transactions.value];
         list.insert(index, last);

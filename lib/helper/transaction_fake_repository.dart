@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:financial_tracker/common/errors/errors_classes.dart';
 import 'package:financial_tracker/common/errors/errors_messagens.dart';
@@ -43,8 +44,14 @@ class TransactionFakeRepository {
   }
 
   Future<void> addData(String transactionJson) async {
-    
     await Future.delayed(const Duration(seconds: 2));
+
+    // Simula uma falha
+    if (Random().nextBool()) {
+      Random().nextBool()
+          ? throw APIFailure(MessagesError.apiError)
+          : throw InvalidData(MessagesError.recordInvalidFormat);
+    }
 
     if (transactionJson.isEmpty) {
       throw InvalidData(MessagesError.recordInvalidFormat);
@@ -52,12 +59,20 @@ class TransactionFakeRepository {
 
     transactions.add(TransactionEntity.fromMap(jsonDecode(transactionJson)));
   }
-  
-  Future<String> getDataByDateRange(DateTime startDate, DateTime endDate) async {
-    final filteredTransactions = transactions.where((transaction) {
-      return transaction.date.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
-             transaction.date.isBefore(endDate.add(const Duration(seconds: 1)));
-    }).toList();
+
+  Future<String> getDataByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final filteredTransactions =
+        transactions.where((transaction) {
+          return transaction.date.isAfter(
+                startDate.subtract(const Duration(seconds: 1)),
+              ) &&
+              transaction.date.isBefore(
+                endDate.add(const Duration(seconds: 1)),
+              );
+        }).toList();
 
     if (filteredTransactions.isEmpty) {
       throw DatasourceResultEmpty(MessagesError.emptySearch);

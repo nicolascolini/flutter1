@@ -1,3 +1,6 @@
+import 'package:financial_tracker/common/errors/errors_classes.dart';
+import 'package:financial_tracker/common/patterns/command.dart';
+
 import '../../common/utils/formatter.dart';
 import '../../domain/entity/transaction_entity.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +13,8 @@ class TransactionCardSheets extends StatefulWidget {
   expenseTransactions; // Lista de transações de despesas
   final Function(String id)
   onDelete; // Callback para deletar uma transação pelo ID
-  final Function(TransactionEntity transaction)
+
+  final Command1<void, Failure, TransactionEntity>
   undoDelete; // Callback para desfazer exclusão
   final BuildContext
   scaffoldContext; // Contexto do Scaffold para exibir SnackBars
@@ -182,7 +186,10 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
           mainAxisAlignment: MainAxisAlignment.center, // Centraliza conteúdo
           children: [
             Icon(
-              title == TransactionType.income.namePlural // Receitas
+              title ==
+                      TransactionType
+                          .income
+                          .namePlural // Receitas
                   ? Icons.savings
                   : Icons.shopping_cart, // Ícone condicional
               size: 48,
@@ -232,8 +239,9 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
                 color: Colors.white,
               ), // Ícone de exclusão
             ),
-            onDismissed: (direction) {
-              widget.onDelete(
+            onDismissed: (direction) async {
+              
+              await widget.onDelete(
                 transaction.id,
               ); // Chama callback para deletar transação
 
@@ -245,23 +253,41 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
                   content: Text(
                     '${transaction.title} excluída!!!',
                   ), // Mensagem de exclusão
-                  backgroundColor: Colors.redAccent, // Cor do snackbar vermelho
+                  backgroundColor:
+                      Colors.pinkAccent, // Cor do snackbar vermelho
                   action: SnackBarAction(
                     label: 'DESFAZER', // Botão para desfazer
                     textColor: Colors.white,
-                    onPressed: () {
-                      widget.undoDelete(
-                        undoTransaction,
-                      ); // Chama callback para desfazer exclusão
-                      ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${transaction.title} restaurada!',
-                          ), // Mensagem de restauração
-                          backgroundColor:
-                              Colors.green, // Cor do snackbar verde
-                        ),
-                      );
+                    onPressed: () async {
+                      // Chama callback para desfazer exclusão
+                      await widget.undoDelete.execute(undoTransaction);
+                      //print(widget.undoDelete.resultSignal.value);
+                      if (widget.undoDelete.resultSignal.value?.isSuccess ??
+                          false) {
+                        ScaffoldMessenger.of(
+                          widget.scaffoldContext,
+                        ).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${transaction.title} restaurada!',
+                            ), // Mensagem de restauração
+                            backgroundColor:
+                                Colors.green, // Cor do snackbar verde
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(
+                          widget.scaffoldContext,
+                        ).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${widget.undoDelete.resultSignal.value?.failureValueOrNull ?? 'Erro desconhecido'}',
+                            ), // Mensagem de restauração
+                            backgroundColor:
+                                Colors.red, // Cor do snackbar verde
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),

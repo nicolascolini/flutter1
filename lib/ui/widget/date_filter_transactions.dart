@@ -126,6 +126,7 @@ class _DateFilterWidgetState extends State<DateFilterTransactions> {
       });
 
       widget.onFilterChanged(_startDate, _endDate);
+      widget.onUpdateFilter(_filterType, _startDate, _endDate);
     }
   }
 

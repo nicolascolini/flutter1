@@ -88,6 +88,7 @@ class _TransactionFormState extends State<TransactionForm> {
             duration: const Duration(seconds: 2),
           ),
         );
+        Navigator.pop(context);
         return;
       }
 

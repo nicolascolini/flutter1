@@ -176,11 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onDelete: (id) {
                   viewModelController.deleteTransaction.execute(id);
                 },
-                undoDelete: (transaction) {
-                  viewModelController.undoDelectedTransaction.execute(
-                    transaction,
-                  );
-                },
+                undoDelete: viewModelController.undoDelectedTransaction,
                 scaffoldContext: context,
               );
             }),
@@ -266,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
     TransactionSheet.show(
       context: context,
       type: TransactionType.expense,
-       submitCommand: viewModelController.saveTransaction,
+      submitCommand: viewModelController.saveTransaction,
       // onSubmit: (newTransaction) {
       //   viewModelController.saveTransaction.execute(newTransaction);
       // },
