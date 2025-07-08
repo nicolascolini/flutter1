@@ -171,13 +171,16 @@ class _HomeScreenState extends State<HomeScreen> {
               final incomes = viewModelController.incomes.value;
               final expenses = viewModelController.expenses.value;
               return TransactionCardSheets(
-                incomeTransactions: incomes,
-                expenseTransactions: expenses,
-                onDelete: (id) {
-                  viewModelController.deleteTransaction.execute(id);
-                },
-                undoDelete: viewModelController.undoDelectedTransaction,
-                scaffoldContext: context,
+              incomeTransactions: incomes,
+              expenseTransactions: expenses,
+              onDelete: (id) {
+                viewModelController.deleteTransaction.execute(id);
+              },
+              undoDelete: viewModelController.undoDelectedTransaction,
+              scaffoldContext: context,
+              onUpdate: (TransactionEntity transaction) {
+                return viewModelController.updateTransaction.execute(transaction);
+              },
               );
             }),
 

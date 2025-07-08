@@ -5,19 +5,13 @@ import '../../common/utils/formatter.dart';
 import '../../domain/entity/transaction_entity.dart';
 import 'package:flutter/material.dart';
 
-/// widget que exibe uma lista de transações de receitas e despesas
 class TransactionCardSheets extends StatefulWidget {
-  final List<TransactionEntity>
-  incomeTransactions; // Lista de transações de receitas
-  final List<TransactionEntity>
-  expenseTransactions; // Lista de transações de despesas
-  final Function(String id)
-  onDelete; // Callback para deletar uma transação pelo ID
-
-  final Command1<void, Failure, TransactionEntity>
-  undoDelete; // Callback para desfazer exclusão
-  final BuildContext
-  scaffoldContext; // Contexto do Scaffold para exibir SnackBars
+  final List<TransactionEntity> incomeTransactions;
+  final List<TransactionEntity> expenseTransactions;
+  final Function(String id) onDelete;
+  final Command1<void, Failure, TransactionEntity> undoDelete;
+  final Future<void> Function(TransactionEntity transaction) onUpdate; // NOVO callback update
+  final BuildContext scaffoldContext;
 
   const TransactionCardSheets({
     super.key,
@@ -25,6 +19,7 @@ class TransactionCardSheets extends StatefulWidget {
     required this.expenseTransactions,
     required this.onDelete,
     required this.undoDelete,
+    required this.onUpdate,
     required this.scaffoldContext,
   });
 
@@ -34,25 +29,75 @@ class TransactionCardSheets extends StatefulWidget {
 
 class _TransactionCardSheetsState extends State<TransactionCardSheets>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController; // Controlador para o TabBar e TabBarView
+  late TabController _tabController;
+
+  // Para controlar os controllers dos TextFields dinamicamente, 
+  // usamos Map<String, TextEditingController> para título e valor
+  final Map<String, TextEditingController> _titleControllers = {};
+  final Map<String, TextEditingController> _amountControllers = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-    ); // 2 abas: Receitas e Despesas
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      if (mounted)
-        setState(() {}); // Atualiza o estado quando troca de aba acontece
+      if (mounted) setState(() {});
     });
+
+    // inicializa os controllers para as transações atuais
+    _initControllers(widget.incomeTransactions);
+    _initControllers(widget.expenseTransactions);
+  }
+
+  void _initControllers(List<TransactionEntity> transactions) {
+    for (var t in transactions) {
+      _titleControllers[t.id] ??= TextEditingController(text: t.title);
+      _amountControllers[t.id] ??= TextEditingController(text: t.amount.toString());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant TransactionCardSheets oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Atualiza controllers se a lista mudar
+    _initControllers(widget.incomeTransactions);
+    _initControllers(widget.expenseTransactions);
   }
 
   @override
   void dispose() {
-    _tabController.dispose(); // Limpa o controlador para evitar leaks
+    _tabController.dispose();
+    _titleControllers.forEach((_, c) => c.dispose());
+    _amountControllers.forEach((_, c) => c.dispose());
     super.dispose();
+  }
+
+  Future<void> _updateTransactionField(TransactionEntity oldTransaction, {
+    String? newTitle,
+    double? newAmount,
+    DateTime? newDate,
+  }) async {
+    // Cria uma cópia com os novos valores (se existirem)
+    final updated = oldTransaction.copyWith(
+      title: newTitle ?? oldTransaction.title,
+      amount: newAmount ?? oldTransaction.amount,
+      date: newDate ?? oldTransaction.date,
+    );
+
+    await widget.onUpdate(updated);
+  }
+
+  Future<void> _pickDate(TransactionEntity transaction) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: transaction.date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null && picked != transaction.date) {
+      await _updateTransactionField(transaction, newDate: picked);
+    }
   }
 
   @override
@@ -61,80 +106,67 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
     final colorScheme = theme.colorScheme;
 
     return Card(
-      elevation: 8, // Elevação do card para sombra
-      margin: const EdgeInsets.all(12), // Margem externa do card
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ), // Bordas arredondadas
+      elevation: 8,
+      margin: const EdgeInsets.all(12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
-          Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.tertiary.withValues(
-                    alpha: 0.15,
-                  ), // Fundo com transparência
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ), // Apenas bordas superiores arredondadas
-                ),
-                child: TabBar(
-                  controller: _tabController, // Controlador das abas
-                  tabs: [
-                    _buildTab(
-                      TransactionType.income.namePlural, // Título da aba
-                      Icons.arrow_upward, // Ícone da aba
-                      0, // Índice da aba
-                      colorScheme.primary, // Cor ativa
-                      colorScheme.primary.withValues(alpha: 0.5), // Cor inativa
-                    ),
-                    _buildTab(
-                      TransactionType.expense.namePlural,
-                      Icons.arrow_downward,
-                      1,
-                      colorScheme.secondary,
-                      colorScheme.secondary.withValues(alpha: 0.5),
-                    ),
-                  ],
-                  indicatorColor:
-                      _tabController.index ==
-                              0 // Cor do indicador da aba selecionada
-                          ? colorScheme.primary
-                          : colorScheme.secondary,
-                  indicatorSize:
-                      TabBarIndicatorSize
-                          .label, // Indicador do tamanho do label
-                ),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.tertiary.withOpacity(0.15),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ), // Arredonda bordas inferiores para combinar com o card
-                child: SizedBox(
-                  height: 290, // Altura fixa do conteúdo da aba
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTransactionList(
-                        context,
-                        widget.incomeTransactions, // Lista de receitas
-                        colorScheme.primary,
-                        TransactionType.income.namePlural,
-                      ),
-                      _buildTransactionList(
-                        context,
-                        widget.expenseTransactions, // Lista de despesas
-                        colorScheme.secondary,
-                        TransactionType.expense.namePlural,
-                      ),
-                    ],
+            ),
+            child: TabBar(
+              controller: _tabController,
+              tabs: [
+                _buildTab(
+                  TransactionType.income.namePlural,
+                  Icons.arrow_upward,
+                  0,
+                  colorScheme.primary,
+                  colorScheme.primary.withOpacity(0.5),
+                ),
+                _buildTab(
+                  TransactionType.expense.namePlural,
+                  Icons.arrow_downward,
+                  1,
+                  colorScheme.secondary,
+                  colorScheme.secondary.withOpacity(0.5),
+                ),
+              ],
+              indicatorColor:
+                  _tabController.index == 0 ? colorScheme.primary : colorScheme.secondary,
+              indicatorSize: TabBarIndicatorSize.label,
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
+            child: SizedBox(
+              height: 290,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTransactionList(
+                    context,
+                    widget.incomeTransactions,
+                    colorScheme.primary,
+                    TransactionType.income.namePlural,
                   ),
-                ),
+                  _buildTransactionList(
+                    context,
+                    widget.expenseTransactions,
+                    colorScheme.secondary,
+                    TransactionType.expense.namePlural,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -148,25 +180,20 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
     Color activeColor,
     Color inactiveColor,
   ) {
-    final isSelected =
-        _tabController.index == index; // Verifica se a aba está selecionada
-    final color =
-        isSelected ? activeColor : inactiveColor; // Cor ativa ou inativa
+    final isSelected = _tabController.index == index;
+    final color = isSelected ? activeColor : inactiveColor;
 
     return Tab(
       child: Row(
-        mainAxisSize: MainAxisSize.min, // Tamanho da linha adaptado ao conteúdo
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: color), // Ícone da aba com a cor correta
-          const SizedBox(width: 8), // Espaço entre ícone e texto
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
           Text(
-            title, // Texto da aba
+            title,
             style: TextStyle(
-              color: color, // Cor do texto (ativa ou inativa)
-              fontWeight:
-                  isSelected
-                      ? FontWeight.bold
-                      : FontWeight.normal, // Negrito se selecionada
+              color: color,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ],
@@ -183,24 +210,21 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
     if (transactions.isEmpty) {
       return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Centraliza conteúdo
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              title ==
-                      TransactionType
-                          .income
-                          .namePlural // Receitas
+              title == TransactionType.income.namePlural
                   ? Icons.savings
-                  : Icons.shopping_cart, // Ícone condicional
+                  : Icons.shopping_cart,
               size: 48,
               color: Colors.grey,
             ),
             const SizedBox(height: 8),
             Text(
-              'Sem ${title.toLowerCase()} registradas', // Mensagem de lista vazia
+              'Sem ${title.toLowerCase()} registradas',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-              ), // Estilo e cor do texto
+                    color: Colors.grey[600],
+                  ),
             ),
           ],
         ),
@@ -208,83 +232,55 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
     }
 
     return Scrollbar(
-      thumbVisibility: true, // Mostra a barra de rolagem sempre
+      thumbVisibility: true,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8,
-        ), // Espaçamento vertical na lista
-        itemCount: transactions.length, // Quantidade de itens da lista
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: transactions.length,
         itemBuilder: (context, index) {
           final transaction = transactions[index];
-          final undoTransaction =
-              transaction.copyWith(); // Cópia para desfazer exclusão
+          final undoTransaction = transaction.copyWith();
+
+          final titleController = _titleControllers[transaction.id]!;
+          final amountController = _amountControllers[transaction.id]!;
 
           return Dismissible(
-            key: Key(transaction.id), // Chave única para controle do widget
-            direction:
-                DismissDirection
-                    .endToStart, // Permite deslizar da direita para esquerda
+            key: Key(transaction.id),
+            direction: DismissDirection.endToStart,
             background: Container(
-              alignment:
-                  Alignment.centerRight, // Ícone aparece alinhado à direita
-              padding: const EdgeInsets.only(
-                right: 20.0,
-              ), // Espaçamento interno
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
               decoration: BoxDecoration(
-                color: Colors.red, // Fundo vermelho para exclusão
+                color: Colors.red,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.delete,
-                color: Colors.white,
-              ), // Ícone de exclusão
+              child: const Icon(Icons.delete, color: Colors.white),
             ),
             onDismissed: (direction) async {
-              
-              await widget.onDelete(
-                transaction.id,
-              ); // Chama callback para deletar transação
-
+              await widget.onDelete(transaction.id);
               ScaffoldMessenger.of(widget.scaffoldContext).clearSnackBars();
-              // Limpa snackbars anteriores para evitar sobreposição
-
               ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    '${transaction.title} excluída!!!',
-                  ), // Mensagem de exclusão
-                  backgroundColor:
-                      Colors.pinkAccent, // Cor do snackbar vermelho
+                  content: Text('${transaction.title} excluída!!!'),
+                  backgroundColor: Colors.pinkAccent,
                   action: SnackBarAction(
-                    label: 'DESFAZER', // Botão para desfazer
+                    label: 'DESFAZER',
                     textColor: Colors.white,
                     onPressed: () async {
-                      // Chama callback para desfazer exclusão
                       await widget.undoDelete.execute(undoTransaction);
-                      //print(widget.undoDelete.resultSignal.value);
-                      if (widget.undoDelete.resultSignal.value?.isSuccess ??
-                          false) {
-                        ScaffoldMessenger.of(
-                          widget.scaffoldContext,
-                        ).showSnackBar(
+                      if (widget.undoDelete.resultSignal.value?.isSuccess ?? false) {
+                        ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              '${transaction.title} restaurada!',
-                            ), // Mensagem de restauração
-                            backgroundColor:
-                                Colors.green, // Cor do snackbar verde
+                            content: Text('${transaction.title} restaurada!'),
+                            backgroundColor: Colors.green,
                           ),
                         );
                       } else {
-                        ScaffoldMessenger.of(
-                          widget.scaffoldContext,
-                        ).showSnackBar(
+                        ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
                           SnackBar(
                             content: Text(
                               '${widget.undoDelete.resultSignal.value?.failureValueOrNull ?? 'Erro desconhecido'}',
-                            ), // Mensagem de restauração
-                            backgroundColor:
-                                Colors.red, // Cor do snackbar verde
+                            ),
+                            backgroundColor: Colors.red,
                           ),
                         );
                       }
@@ -294,47 +290,88 @@ class _TransactionCardSheetsState extends State<TransactionCardSheets>
               );
             },
             child: Card(
-              margin: const EdgeInsets.symmetric(
-                horizontal: 5,
-                vertical: 4,
-              ), // Margem do card da transação
-              elevation: 0, // Sem sombra
+              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // Bordas arredondadas
-                side: BorderSide(
-                  color: Colors.grey.shade300,
-                ), // Borda cinza clara
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300),
               ),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ), // Espaçamento interno do item
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 leading: CircleAvatar(
                   radius: 22,
-                  backgroundColor: color.withValues(
-                    alpha: 0.2,
-                  ), // Fundo com transparência
+                  backgroundColor: color.withOpacity(0.2),
                   child: Icon(
-                    title == 'Income' ? Icons.attach_money : Icons.shopping_bag,
-                    color: color, // Cor do ícone conforme tipo
+                    title == TransactionType.income.namePlural
+                        ? Icons.attach_money
+                        : Icons.shopping_bag,
+                    color: color,
                   ),
                 ),
-                title: Text(
-                  transaction.title, // Título da transação
+                title: TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                   style: Theme.of(context).textTheme.titleMedium,
+                  onSubmitted: (value) async {
+                    if (value.trim().isNotEmpty && value != transaction.title) {
+                      await _updateTransactionField(transaction, newTitle: value.trim());
+                    }
+                  },
+                  onEditingComplete: () async {
+                    final value = titleController.text.trim();
+                    if (value.isNotEmpty && value != transaction.title) {
+                      await _updateTransactionField(transaction, newTitle: value);
+                    }
+                    FocusScope.of(context).unfocus();
+                  },
                 ),
-                subtitle: Text(
-                  Formatter.formatDate(transaction.date), // Data formatada
-                  style: Theme.of(context).textTheme.bodySmall,
+                subtitle: GestureDetector(
+                  onTap: () => _pickDate(transaction),
+                  child: Text(
+                    Formatter.formatDate(transaction.date),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          decoration: TextDecoration.underline,
+                          color: Colors.blue,
+                        ),
+                  ),
                 ),
-                trailing: Text(
-                  Formatter.formatCurrency(
-                    transaction.amount,
-                  ), // Valor formatado em moeda
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color, // Cor do texto conforme tipo
+                trailing: SizedBox(
+                  width: 110,
+                  child: TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                    onSubmitted: (value) async {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null && parsed != transaction.amount) {
+                        await _updateTransactionField(transaction, newAmount: parsed);
+                      } else {
+                        // Se parse falhar, restaura valor original no controller
+                        amountController.text = transaction.amount.toString();
+                      }
+                    },
+                    onEditingComplete: () async {
+                      final value = amountController.text.trim();
+                      final parsed = double.tryParse(value);
+                      if (parsed != null && parsed != transaction.amount) {
+                        await _updateTransactionField(transaction, newAmount: parsed);
+                      } else {
+                        amountController.text = transaction.amount.toString();
+                      }
+                      FocusScope.of(context).unfocus();
+                    },
                   ),
                 ),
               ),

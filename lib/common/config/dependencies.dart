@@ -3,6 +3,7 @@ import 'package:financial_tracker/domain/usecase/add_transaction_use_case_impl.d
 import 'package:financial_tracker/domain/usecase/delete_transaction_use_case_impl.dart';
 import 'package:financial_tracker/domain/usecase/get_transaction_by_date_use_case_impl.dart';
 import 'package:financial_tracker/domain/usecase/use_case_facade.dart';
+import 'package:financial_tracker/domain/usecase/update_transaction_use_case_impl.dart';
 
 import '../../data/repositories/transaction_repository_contract.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
@@ -11,6 +12,7 @@ import '../../data/services/transaction_storage_contract.dart';
 import '../../domain/usecase/get_all_%20transactions_use_case_impl.dart';
 import '../../domain/usecase/get_transaction_use_case_impl.dart';
 import '../../ui/controller/home_page_controller.dart';
+
 
 final injector = AutoInjector();
 
@@ -26,6 +28,7 @@ void setupDependencies() {
   injector.addSingleton(GetTransactionBayDateUseCaseImpl.new);
   injector.addSingleton(DeleteTransactionUseCaseImpl.new);
   injector.addSingleton(AddTransactionUseCaseImpl.new);
+  injector.addSingleton(UpdateTransactionUseCaseImpl.new);
   injector.addSingleton(TransactionFacadeUseCases.new);
   
 

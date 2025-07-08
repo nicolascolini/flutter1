@@ -46,4 +46,17 @@ class TransactionRepositoryImpl implements TransactionRepositoryContract {
   ) {
     return _dataSource.fetchTransacionsByDate(startDate, endDate);
   }
+
+  @override
+  Future<Result<void, Failure>> updateTransacion(TransactionEntity transaction) async {
+  try {
+    // Exemplo: remove e adiciona de novo
+    await deleteTransacion(transaction.id);
+    await saveTransacion(transaction);
+    return const Success(null);
+  } catch (e) {
+    return Error(DefaultError('Erro ao atualizar: \$e'));
+  }
+}
+
 }

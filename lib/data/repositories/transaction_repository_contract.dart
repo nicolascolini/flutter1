@@ -16,4 +16,6 @@ abstract class TransactionRepositoryContract {
   );
   Future<Result<void, Failure>> deleteTransacion(String id);
   Future<Result<void, Failure>> saveTransacion(TransactionEntity transaction);
+  Future<Result<void, Failure>> updateTransacion(TransactionEntity transaction); // <-- Novo
+
 }
