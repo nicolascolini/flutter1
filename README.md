@@ -1,16 +1,12 @@
-# financial_tracker
+O comportamento ao editar ficou semelhante a um formulário inline: ao sair do campo ou pressionar "enter", o valor é validado e enviado.
+Foi adaptado o widget TransactionCardSheets para que os campos title, amount e date de cada transação fossem editáveis com TextField 
+onUpdate foi adicionado ao TransactionCardSheets, permitindo que o widget envie a transação para o controller
+No HomePageController, foi criado um novo Command1 chamado updateTransaction, responsável por:
+Enviar a transação editada ao caso de uso (UpdateTransactionUseCaseImpl)
+Atualizar a lista interna _transactions para refletir a modificação na tela
+O UpdateTransactionUseCaseImpl foi implementado para repassar a transação editada ao repositório.
+Foi registrado no setupDependencies() para que o TransactionFacadeUseCases pudesse usá-lo.
+No HomeScreen, o parâmetro onUpdate foi conectado ao comando updateTransaction.execute(...).
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Ao alterar título, valor ou data de transação:
+interface reflete a mudança; O dado é persistido pelo repositório fake e a arquitetura padrão é respeitada.
